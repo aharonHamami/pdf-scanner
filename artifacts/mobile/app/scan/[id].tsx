@@ -154,25 +154,56 @@ export default function ScanScreen() {
         })
       );
 
+      // A4 in points: 595 × 842 (72 pt/inch)
+      const PAGE_W = 595;
+      const PAGE_H = 842;
+
       const pageHtml = base64Images
         .map(
-          (b64, i) => `
-        <div style="
-          width:210mm;height:297mm;
-          display:flex;align-items:center;justify-content:center;
-          overflow:hidden;background:#fff;
-          page-break-after:${i < base64Images.length - 1 ? "always" : "avoid"};
-        ">
-          <img src="${b64}" style="max-width:100%;max-height:100%;object-fit:contain;" />
+          (b64) => `
+        <div class="page">
+          <img src="${b64}" />
         </div>`
         )
         .join("");
 
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-        <style>*{margin:0;padding:0;box-sizing:border-box;}body{background:#fff;}</style>
-        </head><body>${pageHtml}</body></html>`;
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+  @page { size: ${PAGE_W}pt ${PAGE_H}pt; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #fff; }
+  .page {
+    width: ${PAGE_W}px;
+    height: ${PAGE_H}px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    page-break-after: always;
+    page-break-inside: avoid;
+    background: #fff;
+  }
+  .page:last-child { page-break-after: avoid; }
+  .page img {
+    display: block;
+    max-width: ${PAGE_W}px;
+    max-height: ${PAGE_H}px;
+    width: auto;
+    height: auto;
+  }
+</style>
+</head>
+<body>${pageHtml}</body>
+</html>`;
 
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const { uri } = await Print.printToFileAsync({
+        html,
+        width: PAGE_W,
+        height: PAGE_H,
+        base64: false,
+      });
 
       const safeName = (doc.name || "scan").replace(/[^a-z0-9]/gi, "_");
       const finalUri = (FileSystem.cacheDirectory ?? "") + safeName + ".pdf";
