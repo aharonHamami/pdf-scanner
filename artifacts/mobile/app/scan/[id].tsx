@@ -3,15 +3,16 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import * as Print from "expo-print";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
+import { PDFDocument } from "pdf-lib";
 import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
   FlatList,
+  Image as RNImage,
   Modal,
   Platform,
   StyleSheet,
@@ -145,69 +146,55 @@ export default function ScanScreen() {
 
     setExporting(true);
     try {
-      const base64Images = await Promise.all(
-        doc.pages.map(async (uri) => {
-          const b64 = await FileSystem.readAsStringAsync(uri, {
+      const getSize = (uri: string): Promise<{ width: number; height: number }> =>
+        new Promise((resolve, reject) =>
+          RNImage.getSize(uri, (w, h) => resolve({ width: w, height: h }), reject)
+        );
+
+      const b64ToBytes = (b64: string): Uint8Array => {
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes;
+      };
+
+      const bytesToB64 = (bytes: Uint8Array): string => {
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        return btoa(binary);
+      };
+
+      const pdfDoc = await PDFDocument.create();
+
+      for (const pageUri of doc.pages) {
+        const [b64, { width: imgW, height: imgH }] = await Promise.all([
+          FileSystem.readAsStringAsync(pageUri, {
             encoding: FileSystem.EncodingType.Base64,
-          });
-          return `data:image/jpeg;base64,${b64}`;
-        })
-      );
+          }),
+          getSize(pageUri),
+        ]);
 
-      // A4 in points: 595 × 842 (72 pt/inch)
-      const PAGE_W = 595;
-      const PAGE_H = 842;
+        const bytes = b64ToBytes(b64);
 
-      const pageHtml = base64Images
-        .map(
-          (b64) => `
-        <div class="page">
-          <img src="${b64}" />
-        </div>`
-        )
-        .join("");
+        let embedded;
+        try {
+          embedded = await pdfDoc.embedJpg(bytes);
+        } catch {
+          embedded = await pdfDoc.embedPng(bytes);
+        }
 
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<style>
-  @page { size: ${PAGE_W}pt ${PAGE_H}pt; margin: 0; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #fff; }
-  .page {
-    width: ${PAGE_W}px;
-    height: ${PAGE_H}px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    page-break-after: always;
-    page-break-inside: avoid;
-    background: #fff;
-  }
-  .page:last-child { page-break-after: avoid; }
-  .page img {
-    display: block;
-    max-width: ${PAGE_W}px;
-    max-height: ${PAGE_H}px;
-    width: auto;
-    height: auto;
-  }
-</style>
-</head>
-<body>${pageHtml}</body>
-</html>`;
+        const page = pdfDoc.addPage([imgW, imgH]);
+        page.drawImage(embedded, { x: 0, y: 0, width: imgW, height: imgH });
+      }
 
-      const { uri } = await Print.printToFileAsync({
-        html,
-        width: PAGE_W,
-        height: PAGE_H,
-        base64: false,
-      });
+      const pdfBytes = await pdfDoc.save();
+      const pdfB64 = bytesToB64(pdfBytes);
 
       const safeName = (doc.name || "scan").replace(/[^a-z0-9]/gi, "_");
       const finalUri = (FileSystem.cacheDirectory ?? "") + safeName + ".pdf";
-      await FileSystem.copyAsync({ from: uri, to: finalUri });
+      await FileSystem.writeAsStringAsync(finalUri, pdfB64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
