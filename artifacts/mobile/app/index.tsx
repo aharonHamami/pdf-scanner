@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -80,7 +79,6 @@ export default function HomeScreen() {
               return;
             const doc = await createDocument(t.newScan);
             await addPage(doc.id, result.assets[0].uri);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.push(`/scan/${doc.id}`);
           } catch {
             Alert.alert(t.error, t.failedToScan);
@@ -101,7 +99,6 @@ export default function HomeScreen() {
             for (const asset of result.assets) {
               await addPage(doc.id, asset.uri);
             }
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.push(`/scan/${doc.id}`);
           } catch {
             Alert.alert(t.error, t.failedToImport);
@@ -115,7 +112,6 @@ export default function HomeScreen() {
   }, [t, createDocument, addPage, pickImages]);
 
   const handleOpenDoc = useCallback((doc: ScanDocument) => {
-    Haptics.selectionAsync();
     router.push(`/scan/${doc.id}`);
   }, []);
 
@@ -127,7 +123,6 @@ export default function HomeScreen() {
           style: "destructive",
           onPress: async () => {
             await deleteDocument(doc.id);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           },
         },
         { text: t.cancel, style: "cancel" },

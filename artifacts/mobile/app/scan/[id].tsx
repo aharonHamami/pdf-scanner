@@ -1,6 +1,5 @@
 import { Feather } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -72,7 +71,6 @@ export default function ScanScreen() {
             });
             if (!result.canceled) {
               await addPage(id!, result.assets[0].uri);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
           } finally {
             setAdding(false);
@@ -100,7 +98,6 @@ export default function ScanScreen() {
               for (const asset of result.assets) {
                 await addPage(id!, asset.uri);
               }
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
           } finally {
             setAdding(false);
@@ -119,7 +116,6 @@ export default function ScanScreen() {
           style: "destructive",
           onPress: async () => {
             await removePage(id!, index);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           },
         },
         { text: t.cancel, style: "cancel" },
@@ -132,7 +128,6 @@ export default function ScanScreen() {
     async (index: number) => {
       if (index === 0) return;
       await movePage(id!, index, index - 1);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
     [id, movePage]
   );
@@ -141,7 +136,6 @@ export default function ScanScreen() {
     async (index: number) => {
       if (!doc || index >= doc.pages.length - 1) return;
       await movePage(id!, index, index + 1);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
     [id, movePage, doc]
   );
@@ -222,7 +216,6 @@ export default function ScanScreen() {
       } else {
         Alert.alert(t.pdfExported, finalUri);
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       Alert.alert(t.exportFailed, t.exportFailedMessage);
     } finally {
@@ -237,7 +230,6 @@ export default function ScanScreen() {
         style: "destructive",
         onPress: async () => {
           await deleteDocument(id!);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           router.back();
         },
       },
