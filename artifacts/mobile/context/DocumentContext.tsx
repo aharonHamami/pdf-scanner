@@ -18,7 +18,7 @@ export interface ScanDocument {
 interface DocumentContextValue {
   documents: ScanDocument[];
   loading: boolean;
-  createDocument: () => Promise<ScanDocument>;
+  createDocument: (namePrefix?: string) => Promise<ScanDocument>;
   addPage: (docId: string, imageUri: string) => Promise<void>;
   removePage: (docId: string, pageIndex: number) => Promise<void>;
   movePage: (docId: string, from: number, to: number) => Promise<void>;
@@ -61,15 +61,16 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const createDocument = useCallback(async (): Promise<ScanDocument> => {
+  const createDocument = useCallback(async (namePrefix = "Scan"): Promise<ScanDocument> => {
     const id =
       Date.now().toString() + Math.random().toString(36).substring(2, 9);
     const now = new Date();
-    const name = `Scan ${now.toLocaleDateString("en-US", {
+    const datePart = now.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })}`;
+    });
+    const name = `${namePrefix} ${datePart}`;
     const doc: ScanDocument = { id, name, pages: [], createdAt: Date.now() };
     await updateDocs((prev) => [doc, ...prev]);
     return doc;

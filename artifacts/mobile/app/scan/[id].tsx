@@ -24,6 +24,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useDocuments } from "@/context/DocumentContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 
 const { width, height } = Dimensions.get("window");
@@ -34,8 +35,15 @@ export default function ScanScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getDocument, addPage, removePage, movePage, deleteDocument, renameDocument } =
-    useDocuments();
+  const { t } = useLanguage();
+  const {
+    getDocument,
+    addPage,
+    removePage,
+    movePage,
+    deleteDocument,
+    renameDocument,
+  } = useDocuments();
 
   const [exporting, setExporting] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -47,13 +55,13 @@ export default function ScanScreen() {
   const doc = getDocument(id ?? "");
 
   const handleAddPage = useCallback(() => {
-    Alert.alert("Add Pages", "Choose a source", [
+    Alert.alert(t.addPage, t.chooseSource, [
       {
-        text: "Camera",
+        text: t.camera,
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== "granted") {
-            Alert.alert("Permission needed", "Camera access is required.");
+            Alert.alert(t.cameraPermission, t.cameraPermissionMessage);
             return;
           }
           setAdding(true);
@@ -72,12 +80,12 @@ export default function ScanScreen() {
         },
       },
       {
-        text: "From Gallery",
+        text: t.fromGallery,
         onPress: async () => {
           const { status } =
             await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== "granted") {
-            Alert.alert("Permission needed", "Gallery access is required.");
+            Alert.alert(t.galleryPermission, t.galleryPermissionMessage);
             return;
           }
           setAdding(true);
@@ -99,25 +107,25 @@ export default function ScanScreen() {
           }
         },
       },
-      { text: "Cancel", style: "cancel" },
+      { text: t.cancel, style: "cancel" },
     ]);
-  }, [id, addPage]);
+  }, [t, id, addPage]);
 
   const handleDeletePage = useCallback(
     (index: number) => {
-      Alert.alert("Remove Page", "Remove this page from the scan?", [
+      Alert.alert(t.removePageTitle, t.removePageMessage, [
         {
-          text: "Remove",
+          text: t.remove,
           style: "destructive",
           onPress: async () => {
             await removePage(id!, index);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           },
         },
-        { text: "Cancel", style: "cancel" },
+        { text: t.cancel, style: "cancel" },
       ]);
     },
-    [id, removePage]
+    [t, id, removePage]
   );
 
   const handleMoveUp = useCallback(
@@ -140,27 +148,35 @@ export default function ScanScreen() {
 
   const handleExportPDF = useCallback(async () => {
     if (!doc || doc.pages.length === 0) {
-      Alert.alert("No pages", "Add at least one page before exporting.");
+      Alert.alert(t.noPages, t.addPagesBeforeExporting);
       return;
     }
 
     setExporting(true);
     try {
-      const getSize = (uri: string): Promise<{ width: number; height: number }> =>
+      const getSize = (
+        uri: string
+      ): Promise<{ width: number; height: number }> =>
         new Promise((resolve, reject) =>
-          RNImage.getSize(uri, (w, h) => resolve({ width: w, height: h }), reject)
+          RNImage.getSize(
+            uri,
+            (w, h) => resolve({ width: w, height: h }),
+            reject
+          )
         );
 
       const b64ToBytes = (b64: string): Uint8Array => {
         const binary = atob(b64);
         const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        for (let i = 0; i < binary.length; i++)
+          bytes[i] = binary.charCodeAt(i);
         return bytes;
       };
 
       const bytesToB64 = (bytes: Uint8Array): string => {
         let binary = "";
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        for (let i = 0; i < bytes.length; i++)
+          binary += String.fromCharCode(bytes[i]);
         return btoa(binary);
       };
 
@@ -200,38 +216,34 @@ export default function ScanScreen() {
       if (canShare) {
         await Sharing.shareAsync(finalUri, {
           mimeType: "application/pdf",
-          dialogTitle: `Share ${doc.name}`,
+          dialogTitle: t.shareDoc(doc.name),
           UTI: "com.adobe.pdf",
         });
       } else {
-        Alert.alert("PDF Exported", "PDF saved to: " + finalUri);
+        Alert.alert(t.pdfExported, finalUri);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
-      Alert.alert("Export Failed", "Could not generate PDF. Please try again.");
+    } catch {
+      Alert.alert(t.exportFailed, t.exportFailedMessage);
     } finally {
       setExporting(false);
     }
-  }, [doc]);
+  }, [t, doc]);
 
   const handleDeleteDoc = useCallback(() => {
-    Alert.alert(
-      "Delete Scan",
-      `Delete "${doc?.name}"? This cannot be undone.`,
-      [
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            await deleteDocument(id!);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            router.back();
-          },
+    Alert.alert(t.deleteScan, t.deleteDocMessage(doc?.name ?? ""), [
+      {
+        text: t.delete,
+        style: "destructive",
+        onPress: async () => {
+          await deleteDocument(id!);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          router.back();
         },
-        { text: "Cancel", style: "cancel" },
-      ]
-    );
-  }, [id, deleteDocument, doc]);
+      },
+      { text: t.cancel, style: "cancel" },
+    ]);
+  }, [t, id, deleteDocument, doc]);
 
   const startRename = useCallback(() => {
     setNameInput(doc?.name ?? "");
@@ -252,7 +264,7 @@ export default function ScanScreen() {
   if (!doc) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.foreground }}>Document not found</Text>
+        <Text style={{ color: colors.foreground }}>{t.documentNotFound}</Text>
       </View>
     );
   }
@@ -309,8 +321,8 @@ export default function ScanScreen() {
       >
         <Text style={[styles.subheaderText, { color: colors.mutedForeground }]}>
           {doc.pages.length === 0
-            ? "No pages yet — add some below"
-            : `${doc.pages.length} ${doc.pages.length === 1 ? "page" : "pages"} · Long-press image to preview`}
+            ? t.noScanHint
+            : t.longPressHint(doc.pages.length)}
         </Text>
       </View>
 
@@ -323,10 +335,10 @@ export default function ScanScreen() {
             <Feather name="file-plus" size={44} color={colors.primary} />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            No pages yet
+            {t.noPagesYet}
           </Text>
           <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-            Add pages by tapping "Add Page" below
+            {t.addPageHint}
           </Text>
         </View>
       ) : (
@@ -356,7 +368,6 @@ export default function ScanScreen() {
                   },
                 ]}
               >
-                {/* Page number */}
                 <View
                   style={[
                     styles.pageNumBadge,
@@ -366,7 +377,6 @@ export default function ScanScreen() {
                   <Text style={styles.pageNumText}>{index + 1}</Text>
                 </View>
 
-                {/* Thumbnail */}
                 <Image
                   source={{ uri: item }}
                   style={styles.thumb}
@@ -374,7 +384,6 @@ export default function ScanScreen() {
                   transition={150}
                 />
 
-                {/* Actions */}
                 <View style={styles.pageActions}>
                   <TouchableOpacity
                     style={[
@@ -414,13 +423,14 @@ export default function ScanScreen() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[
-                      styles.actionBtn,
-                      { backgroundColor: "#fef2f2" },
-                    ]}
+                    style={[styles.actionBtn, { backgroundColor: "#fef2f2" }]}
                     onPress={() => handleDeletePage(index)}
                   >
-                    <Feather name="trash-2" size={16} color={colors.destructive} />
+                    <Feather
+                      name="trash-2"
+                      size={16}
+                      color={colors.destructive}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -436,8 +446,7 @@ export default function ScanScreen() {
           {
             backgroundColor: colors.card,
             borderTopColor: colors.border,
-            paddingBottom:
-              (Platform.OS === "web" ? 34 : insets.bottom) + 8,
+            paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 8,
           },
         ]}
       >
@@ -456,7 +465,7 @@ export default function ScanScreen() {
             <>
               <Feather name="plus" size={18} color={colors.primary} />
               <Text style={[styles.addBtnTxt, { color: colors.primary }]}>
-                Add Page
+                {t.addPage}
               </Text>
             </>
           )}
@@ -479,7 +488,7 @@ export default function ScanScreen() {
           ) : (
             <>
               <Feather name="upload" size={18} color="#fff" />
-              <Text style={styles.exportBtnTxt}>Export PDF</Text>
+              <Text style={styles.exportBtnTxt}>{t.exportPDF}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -519,7 +528,6 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
-
   header: {
     paddingHorizontal: 12,
     paddingBottom: 12,
@@ -540,11 +548,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 40,
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   headerTitle: {
     fontSize: 17,
     fontWeight: "600",
@@ -562,14 +566,12 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     minWidth: 140,
   },
-
   subheader: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
   },
   subheaderText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-
   emptyState: {
     flex: 1,
     alignItems: "center",
@@ -596,7 +598,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     lineHeight: 21,
   },
-
   pageList: { padding: 16 },
   pageRow: {
     flexDirection: "row",
@@ -627,11 +628,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Inter_700Bold",
   },
-  thumb: {
-    width: THUMB_W,
-    height: THUMB_H,
-    borderRadius: 8,
-  },
+  thumb: { width: THUMB_W, height: THUMB_H, borderRadius: 8 },
   pageActions: {
     flex: 1,
     flexDirection: "row",
@@ -646,7 +643,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   bottomBar: {
     position: "absolute",
     bottom: 0,
@@ -692,17 +688,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Inter_600SemiBold",
   },
-
   previewOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.9)",
     alignItems: "center",
     justifyContent: "center",
   },
-  previewImage: {
-    width: width,
-    height: height * 0.85,
-  },
+  previewImage: { width: width, height: height * 0.85 },
   previewClose: {
     position: "absolute",
     top: 52,

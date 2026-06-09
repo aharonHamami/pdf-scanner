@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -18,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useLanguage } from "@/context/LanguageContext";
 import { ScanDocument, useDocuments } from "@/context/DocumentContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -28,6 +28,7 @@ const THUMB_HEIGHT = CARD_WIDTH * 1.35;
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const { documents, loading, createDocument, addPage, deleteDocument } =
     useDocuments();
   const [creating, setCreating] = useState(false);
@@ -37,11 +38,9 @@ export default function HomeScreen() {
       if (source === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== "granted") {
-          Alert.alert(
-            "Camera Permission",
-            "Camera access is required to scan documents.",
-            [{ text: "OK" }]
-          );
+          Alert.alert(t.cameraPermission, t.cameraPermissionMessage, [
+            { text: t.ok },
+          ]);
           return null;
         }
         return ImagePicker.launchCameraAsync({
@@ -53,11 +52,9 @@ export default function HomeScreen() {
         const { status } =
           await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
-          Alert.alert(
-            "Gallery Permission",
-            "Gallery access is required to import photos.",
-            [{ text: "OK" }]
-          );
+          Alert.alert(t.galleryPermission, t.galleryPermissionMessage, [
+            { text: t.ok },
+          ]);
           return null;
         }
         return ImagePicker.launchImageLibraryAsync({
@@ -68,52 +65,54 @@ export default function HomeScreen() {
         });
       }
     },
-    []
+    [t]
   );
 
   const handleNewScan = useCallback(() => {
-    Alert.alert("New Scan", "How would you like to add pages?", [
+    Alert.alert(t.newScan, t.howToAdd, [
       {
-        text: "Camera",
+        text: t.camera,
         onPress: async () => {
           setCreating(true);
           try {
             const result = await pickImages("camera");
-            if (!result || result.canceled || result.assets.length === 0) return;
-            const doc = await createDocument();
+            if (!result || result.canceled || result.assets.length === 0)
+              return;
+            const doc = await createDocument(t.newScan);
             await addPage(doc.id, result.assets[0].uri);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.push(`/scan/${doc.id}`);
-          } catch (e) {
-            Alert.alert("Error", "Failed to start scan. Please try again.");
+          } catch {
+            Alert.alert(t.error, t.failedToScan);
           } finally {
             setCreating(false);
           }
         },
       },
       {
-        text: "From Gallery",
+        text: t.fromGallery,
         onPress: async () => {
           setCreating(true);
           try {
             const result = await pickImages("gallery");
-            if (!result || result.canceled || result.assets.length === 0) return;
-            const doc = await createDocument();
+            if (!result || result.canceled || result.assets.length === 0)
+              return;
+            const doc = await createDocument(t.newScan);
             for (const asset of result.assets) {
               await addPage(doc.id, asset.uri);
             }
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.push(`/scan/${doc.id}`);
-          } catch (e) {
-            Alert.alert("Error", "Failed to import photos. Please try again.");
+          } catch {
+            Alert.alert(t.error, t.failedToImport);
           } finally {
             setCreating(false);
           }
         },
       },
-      { text: "Cancel", style: "cancel" },
+      { text: t.cancel, style: "cancel" },
     ]);
-  }, [createDocument, addPage, pickImages]);
+  }, [t, createDocument, addPage, pickImages]);
 
   const handleOpenDoc = useCallback((doc: ScanDocument) => {
     Haptics.selectionAsync();
@@ -122,19 +121,19 @@ export default function HomeScreen() {
 
   const handleDeleteDoc = useCallback(
     (doc: ScanDocument) => {
-      Alert.alert("Delete Scan", `Delete "${doc.name}"? This cannot be undone.`, [
+      Alert.alert(t.deleteScan, t.deleteDocMessage(doc.name), [
         {
-          text: "Delete",
+          text: t.delete,
           style: "destructive",
           onPress: async () => {
             await deleteDocument(doc.id);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           },
         },
-        { text: "Cancel", style: "cancel" },
+        { text: t.cancel, style: "cancel" },
       ]);
     },
-    [deleteDocument]
+    [t, deleteDocument]
   );
 
   const renderDocument = ({ item }: { item: ScanDocument }) => (
@@ -171,23 +170,19 @@ export default function HomeScreen() {
       )}
       <View style={styles.cardInfo}>
         <Text
-          style={[
-            styles.cardName,
-            { color: colors.foreground },
-          ]}
+          style={[styles.cardName, { color: colors.foreground }]}
           numberOfLines={1}
         >
           {item.name}
         </Text>
         <Text style={[styles.cardMeta, { color: colors.mutedForeground }]}>
-          {item.pages.length} {item.pages.length === 1 ? "page" : "pages"}
+          {t.pagesCount(item.pages.length)}
         </Text>
       </View>
     </TouchableOpacity>
   );
 
-  const topPad =
-    Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   if (loading) {
     return (
@@ -203,17 +198,20 @@ export default function HomeScreen() {
       <View
         style={[
           styles.header,
-          {
-            paddingTop: topPad + 12,
-            backgroundColor: colors.primary,
-          },
+          { paddingTop: topPad + 12, backgroundColor: colors.primary },
         ]}
       >
         <View style={styles.headerIcon}>
           <Feather name="file-text" size={22} color="#fff" />
         </View>
-        <Text style={styles.headerTitle}>PDF Scanner</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>{t.appName}</Text>
+        <TouchableOpacity
+          style={styles.settingsBtn}
+          onPress={() => router.push("/settings")}
+          activeOpacity={0.7}
+        >
+          <Feather name="settings" size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       {/* List */}
@@ -225,10 +223,10 @@ export default function HomeScreen() {
             <Feather name="camera" size={44} color={colors.primary} />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            No documents yet
+            {t.noDocumentsYet}
           </Text>
           <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-            Tap the + button to scan your first document
+            {t.tapToScan}
           </Text>
         </View>
       ) : (
@@ -240,8 +238,7 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.list,
             {
-              paddingBottom:
-                (Platform.OS === "web" ? 34 : insets.bottom) + 110,
+              paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 110,
             },
           ]}
           columnWrapperStyle={styles.row}
@@ -255,8 +252,7 @@ export default function HomeScreen() {
           styles.fab,
           {
             backgroundColor: colors.primary,
-            bottom:
-              (Platform.OS === "web" ? 34 : insets.bottom) + 24,
+            bottom: (Platform.OS === "web" ? 34 : insets.bottom) + 24,
           },
         ]}
         onPress={handleNewScan}
@@ -297,6 +293,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Inter_700Bold",
     flex: 1,
+  },
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   list: { padding: 16 },
   row: { gap: 16, marginBottom: 16 },
