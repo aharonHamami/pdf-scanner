@@ -23,16 +23,16 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "#f1f5f9" },
+        animation: "slide_from_right",
+      }}
+    >
       <Stack.Screen name="index" />
-      <Stack.Screen
-        name="scan/[id]"
-        options={{ animation: "slide_from_right" }}
-      />
-      <Stack.Screen
-        name="settings"
-        options={{ animation: "slide_from_right" }}
-      />
+      <Stack.Screen name="scan/[id]" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }
