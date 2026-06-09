@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Alert, I18nManager } from "react-native";
 
 import { Language, Translations, translations } from "@/constants/translations";
 
@@ -35,14 +34,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const setLanguage = useCallback(async (lang: Language) => {
     await AsyncStorage.setItem(STORAGE_KEY, lang);
     _setLanguage(lang);
-    const shouldBeRTL = lang === "he";
-    if (I18nManager.isRTL !== shouldBeRTL) {
-      I18nManager.forceRTL(shouldBeRTL);
-      const t = translations[lang];
-      Alert.alert(t.restartRequired, t.restartRequiredMessage, [
-        { text: t.ok },
-      ]);
-    }
   }, []);
 
   const t = translations[language];
