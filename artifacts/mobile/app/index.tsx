@@ -16,6 +16,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import DocumentScanner, { ResponseType } from "react-native-document-scanner-plugin";
+
 import { useLanguage } from "@/context/LanguageContext";
 import { ScanDocument, useDocuments } from "@/context/DocumentContext";
 import { useColors } from "@/hooks/useColors";
@@ -102,6 +104,28 @@ export default function HomeScreen() {
             router.push(`/scan/${doc.id}`);
           } catch {
             Alert.alert(t.error, t.failedToImport);
+          } finally {
+            setCreating(false);
+          }
+        },
+      },
+      {
+        text: t.scanDocument,
+        onPress: async () => {
+          setCreating(true);
+          try {
+            const { scannedImages } = await DocumentScanner.scanDocument({
+              maxNumDocuments: 20,
+              responseType: ResponseType.ImageFilePath,
+            });
+            if (!scannedImages || scannedImages.length === 0) return;
+            const doc = await createDocument(t.newScan);
+            for (const uri of scannedImages) {
+              await addPage(doc.id, uri);
+            }
+            router.push(`/scan/${doc.id}`);
+          } catch {
+            Alert.alert(t.error, t.failedToScan);
           } finally {
             setCreating(false);
           }

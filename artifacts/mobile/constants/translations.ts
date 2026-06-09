@@ -10,6 +10,7 @@ export interface Translations {
   restartRequired: string;
   restartRequiredMessage: string;
   ok: string;
+  scanDocument: string;
   noDocumentsYet: string;
   tapToScan: string;
   newScan: string;
@@ -58,6 +59,7 @@ const en: Translations = {
   restartRequiredMessage:
     "Close and reopen the app to fully apply the language change.",
   ok: "OK",
+  scanDocument: "Scan Document",
   noDocumentsYet: "No documents yet",
   tapToScan: "Tap the + button to scan your first document",
   newScan: "New Scan",
@@ -107,6 +109,7 @@ const he: Translations = {
   restartRequiredMessage:
     "סגור ופתח את האפליקציה מחדש להחלת שינוי השפה במלואו.",
   ok: "אישור",
+  scanDocument: "סרוק מסמך",
   noDocumentsYet: "אין מסמכים עדיין",
   tapToScan: "לחץ על כפתור + כדי לסרוק את המסמך הראשון שלך",
   newScan: "סריקה חדשה",

@@ -37,6 +37,7 @@
       ],
       "expo-font",
       "expo-web-browser",
+      "react-native-document-scanner-plugin",
       [
         "expo-image-picker",
         {
