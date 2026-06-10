@@ -35,6 +35,7 @@
           "origin": "https://replit.com/"
         }
       ],
+      "expo-dev-client",
       "expo-font",
       "expo-web-browser",
       "react-native-document-scanner-plugin",
