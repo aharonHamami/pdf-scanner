@@ -1,35 +1,18 @@
 {
   "cli": {
-    "version": ">= 16.0.0",
-    "promptToConfigurePushNotifications": false
+    "version": ">= 18.9.1",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "gradleCommand": ":app:assembleDebug",
-        "buildType": "apk"
-      },
-      "ios": {
-        "buildConfiguration": "Debug",
-        "simulator": true
-      }
+      "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
-      "ios": {
-        "buildConfiguration": "Release",
-        "simulator": false
-      }
+      "distribution": "internal"
     },
     "production": {
-      "android": {
-        "buildType": "app-bundle"
-      }
+      "autoIncrement": true
     }
   },
   "submit": {

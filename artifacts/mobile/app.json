@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "PDF Scanner",
-    "slug": "mobile",
+    "slug": "pdf-scanner",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -14,7 +14,8 @@
       "backgroundColor": "#1e40af"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourcompany.pdfscanner"
     },
     "android": {
       "package": "com.yourcompany.pdfscanner",
@@ -22,7 +23,8 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -50,6 +52,15 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
+      "eas": {
+        "projectId": "1f43131b-f972-4448-92df-6cf463bc9fe0"
+      }
+    },
+    "owner": "aharon_h"
   }
 }
