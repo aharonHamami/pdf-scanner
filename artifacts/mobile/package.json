@@ -64,9 +64,9 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
-    "expo-dev-client": "^56.0.19",
-    "expo-file-system": "^56.0.7",
-    "expo-sharing": "^56.0.15",
+    "expo-dev-client": "^6.0.21",
+    "expo-file-system": "^19.0.23",
+    "expo-sharing": "^14.0.8",
     "pdf-lib": "^1.17.1",
     "react-native-document-scanner-plugin": "^2.0.4",
     "expo": "~54.0.35",
